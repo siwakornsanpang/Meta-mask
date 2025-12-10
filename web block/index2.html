@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Contract Interaction</title>
+
+    <!-- Add Web3.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.1/dist/web3.min.js"></script>
+</head>
+<body>
+    <button id="connectWallet">Connect Wallet</button>
+
+    <div id="adminActions" style="display: none;">
+        <!-- Admin actions here -->
+        <button onclick="addCandidate()">Add Candidate</button>
+        <button onclick="startVoting()">Start Voting</button>
+        <button onclick="endVoting()">End Voting</button>
+        <button onclick="resetVoting()">Reset Voting</button>
+    </div>
+
+    <div id="voterActions" style="display: none;">
+        <!-- Voter actions here -->
+        <button onclick="viewCandidates()">View Candidates</button>
+        <button onclick="voteCandidate()">Vote</button>
+        <button onclick="viewResults()">View Results</button>
+        <button onclick="getMyPoints()">Get My Points</button>
+    </div>
+
+    <div id="pointsResult"></div>
+
+    <script>
+        const contractAddress = "0xE3E6D9324A6358d895a6ba59a18Fa8b1ae6A5b57"; // ใส่ที่อยู่ของ Contract ที่นี่
+        const contractABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_name",
+                        "type": "string"
+                    }
+                ],
+                "name": "addCandidate",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    }
+                ],
+                "name": "CandidateAdded",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "endVoting",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "resetVoting",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [],
+                "name": "ResultsViewed",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "startVoting",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_candidateName",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_points",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "vote",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "voter",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "candidateName",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "points",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "VoteSubmitted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [],
+                "name": "VotingReset",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "voterPoints",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "VotingStarted",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "admin",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAllCandidates",
+                "outputs": [
+                    {
+                        "internalType": "string[]",
+                        "name": "",
+                        "type": "string[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getMyPoints",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "remainingPoints",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "hasVoted",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "viewResultsSummary",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "string",
+                                "name": "name",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalVotes",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct CumulativeVoting.Candidate[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "votingEnded",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "votingStarted",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]; // ใส่ ABI ของ Contract ที่นี่
+
+        let web3;
+        let contract;
+
+        async function init() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    // ตรวจสอบการเชื่อมต่อ
+                    await ethereum.request({ method: "eth_requestAccounts" });
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    console.log("Smart contract initialized successfully");
+                } catch (error) {
+                    console.error("Failed to connect to MetaMask or Smart Contract:", error);
+                    alert("Failed to connect to MetaMask or Smart Contract. Please try again.");
+                }
+            } else {
+                alert("MetaMask is not installed. Please install MetaMask to proceed.");
+            }
+        }
+
+        async function checkRole() {
+            if (!contract) {
+                alert("Smart Contract is not initialized. Please try again.");
+                return;
+            }
+
+            try {
+                const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+                console.log("Connected account:", accounts[0]);  // ดูว่ามี account หรือไม่
+                const currentAddress = accounts[0].toLowerCase();
+
+                const adminAddress = (await contract.methods.admin().call()).toLowerCase();
+                console.log("Admin address:", adminAddress);  // ดูว่า admin address ตรงกับที่คาดหวังหรือไม่
+
+                if (currentAddress === adminAddress) {
+                    console.log("User is Admin. Displaying admin actions.");
+                    document.getElementById("adminActions").style.display = "block";
+                    document.getElementById("voterActions").style.display = "none";
+                } else {
+                    console.log("User is not Admin. Displaying voter actions.");
+                    document.getElementById("adminActions").style.display = "none";
+                    document.getElementById("voterActions").style.display = "block";
+                }
+            } catch (error) {
+                console.error("Error checking role:", error);
+                alert("Error checking role. Please try again.");
+            }
+        }
+
+        // ฟังก์ชันของ Admin
+        async function addCandidate() {
+            const name = prompt("Enter Candidate Name:");
+            if (!name) return;
+
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            await contract.methods.addCandidate(name).send({ from: accounts[0] });
+            alert(`Candidate "${name}" added.`);
+        }
+
+        async function startVoting() {
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            await contract.methods.startVoting().send({ from: accounts[0] });
+            alert("Voting started.");
+        }
+
+        async function endVoting() {
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            await contract.methods.endVoting().send({ from: accounts[0] });
+            alert("Voting ended.");
+        }
+
+        async function resetVoting() {
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            await contract.methods.resetVoting().send({ from: accounts[0] });
+            alert("Voting reset.");
+        }
+
+        // ฟังก์ชันของ Voter
+        async function viewCandidates() {
+            const candidates = await contract.methods.getAllCandidates().call();
+            alert(`Candidates: ${candidates.join(", ")}`);
+        }
+
+        async function voteCandidate() {
+            const candidateName = prompt("Enter Candidate Name:");
+            const points = prompt("Enter Points to Vote:");
+            if (!candidateName || !points) return;
+
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            await contract.methods.vote(candidateName, points).send({ from: accounts[0] });
+            alert(`Voted for ${candidateName} with ${points} points.`);
+        }
+
+        async function viewResults() {
+            const results = await contract.methods.viewResultsSummary().call();
+            alert(`Voting Results: ${JSON.stringify(results)}`);
+        }
+
+        async function getMyPoints() {
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            const [points, hasVoted] = await contract.methods.getMyPoints().call({ from: accounts[0] });
+            document.getElementById("pointsResult").innerText = `Your points: ${points}, Voted: ${hasVoted}`;
+        }
+
+        window.onload = init;
+
+        document.getElementById("connectWallet").addEventListener("click", checkRole);
+    </script>
+</body>
+</html>
+

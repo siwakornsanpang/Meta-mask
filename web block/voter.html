@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voter Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.1/dist/web3.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Voter Dashboard</h1>
+        
+        <button onclick="viewCandidates()">View Candidates</button>
+        <button onclick="voteCandidate()">Vote for Candidate</button>
+        <button onclick="viewResults()">View Results</button>
+        
+        <!-- Add the new button for checking points -->
+        <button onclick="getMyPoints()">Check My Points</button>
+        
+        <!-- Add a section to display the points -->
+        <div id="pointsSection">
+            <h2>Your Remaining Points:</h2>
+            <p id="pointsResult">Please check your points.</p>
+        </div>
+
+        <!-- Section to display candidates -->
+        <div id="candidatesSection">
+            <h2>Candidates List:</h2>
+            <ul id="candidatesList">
+                <!-- Candidate names will appear here -->
+            </ul>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
